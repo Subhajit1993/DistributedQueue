@@ -1,0 +1,162 @@
+syntax = "proto3";
+
+package queue;
+option go_package = "pb/queue";
+// QueueService defines the RPC methods for queue operations
+service QueueService {
+  // Queue operations
+  rpc Enqueue(EnqueueRequest) returns (EnqueueResponse);
+  rpc Dequeue(DequeueRequest) returns (DequeueResponse);
+  rpc Ack(AckRequest) returns (AckResponse);
+  rpc Nack(NackRequest) returns (NackResponse);
+
+  // Node management
+  rpc JoinCluster(JoinRequest) returns (JoinResponse);
+  rpc LeaveCluster(LeaveRequest) returns (LeaveResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+
+  // State replication
+  rpc ReplicateOperation(ReplicationRequest) returns (ReplicationResponse);
+  rpc RequestSync(SyncRequest) returns (stream SyncResponse);
+
+  rpc RequestVote(RequestVoteRequest) returns (RequestVoteResponse);
+  rpc GetQueueStats(GetQueueStatsRequest) returns (GetQueueStatsResponse);
+
+}
+
+message RequestVoteRequest {
+  int64 term = 1;
+  string candidateId = 2;
+  int64 lastLogIndex = 3;
+  int64 lastLogTerm = 4;
+}
+
+message RequestVoteResponse {
+  int64 term = 1;
+  bool voteGranted = 2;
+}
+
+
+message Message {
+  string id = 1;
+  bytes data = 2;
+  int64 timestamp = 3;
+  int32 attempts = 4;
+}
+
+// Queue operations messages
+message EnqueueRequest {
+  bytes data = 1;
+  string client_id = 2;
+  int64 request_id = 3;
+}
+
+message EnqueueResponse {
+  string message_id = 1;
+  bool success = 2;
+  string error = 3;
+}
+
+message DequeueRequest {
+  int64 timeout_ms = 1;
+  string client_id = 2;
+  int64 request_id = 3;
+}
+
+message DequeueResponse {
+  Message message = 1;
+  bool success = 2;
+  string error = 3;
+}
+
+message AckRequest {
+  string message_id = 1;
+  string client_id = 2;
+  int64 request_id = 3;
+}
+
+message AckResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message NackRequest {
+  string message_id = 1;
+  string client_id = 2;
+  int64 request_id = 3;
+}
+
+message NackResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+// Node management messages
+message JoinRequest {
+  string node_id = 1;
+  string address = 2;
+  map<string, string> metadata = 3;
+}
+
+message JoinResponse {
+  bool accepted = 1;
+  string leader_id = 2;
+  repeated string current_nodes = 3;
+  string error = 4;
+}
+
+message LeaveRequest {
+  string node_id = 1;
+  bool graceful = 2;
+}
+
+message LeaveResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message HeartbeatRequest {
+  int64 term = 1;
+  string leaderId = 2;
+}
+
+message HeartbeatResponse {
+  int64 term = 1;
+  bool success = 2;
+}
+// Replication messages
+message ReplicationRequest {
+  string source_node = 1;
+  bytes operation_data = 2;
+  int64 sequence_id = 3;
+  int64 term = 4;
+}
+
+message ReplicationResponse {
+  bool success = 1;
+  int64 last_applied = 2;
+  string error = 3;
+}
+
+message SyncRequest {
+  string node_id = 1;
+  int64 from_sequence = 2;
+}
+
+message SyncResponse {
+  repeated bytes operations = 1;
+  int64 last_sequence = 2;
+  bool more = 3;
+}
+
+// Queue stats operations
+
+message GetQueueStatsRequest {}
+
+message GetQueueStatsResponse {
+  int32 size = 1; // Current size of the queue
+  int32 totalEnqueued = 2; // Total messages enqueued
+  int32 totalDequeued = 3; // Total messages dequeued
+}
+
+
